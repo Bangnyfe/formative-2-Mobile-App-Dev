@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "98685580848",
+    "project_id": "formative-2-mobile-app-dev",
+    "storage_bucket": "formative-2-mobile-app-dev.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:98685580848:android:4725724ba0147c0b331ff5",
+        "android_client_info": {
+          "package_name": "com.example.formative_2_mobile_app_dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCTL5AyXWv_KQl9dtWxUfklcgAiJFgjiNM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
