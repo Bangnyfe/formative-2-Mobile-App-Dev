@@ -10,6 +10,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/incident_thumbnail.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/status_timeline.dart';
+import '../report/new_report_screen.dart';
 
 class IncidentDetailsScreen extends StatefulWidget {
   const IncidentDetailsScreen({super.key, required this.incidentId});
@@ -30,39 +31,127 @@ class _IncidentDetailsScreenState extends State<IncidentDetailsScreen> {
     _stream = context.read<IncidentProvider>().watchIncident(widget.incidentId);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Incident Details')),
-      body: StreamBuilder<Incident?>(
-        stream: _stream,
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return const Center(
-              child: EmptyState(
-                icon: Icons.cloud_off_rounded,
-                title: 'Could not load this report',
-                message: 'Check your connection and try again.',
-              ),
-            );
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final incident = snapshot.data;
-          if (incident == null) {
-            return const Center(
-              child: EmptyState(
-                icon: Icons.delete_outline,
-                title: 'Report not found',
-                message: 'This report may have been deleted.',
-              ),
-            );
-          }
-          return _DetailsBody(incident: incident);
-        },
+  Future<void> _confirmDelete(Incident incident) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete this report?'),
+        content: Text(
+          '"${incident.title}" will be permanently removed. This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: AppColors.danger),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
+    if (confirmed != true || !mounted) return;
+
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<IncidentProvider>().deleteIncident(
+      incident.id,
+    );
+    if (error == null) {
+      navigator.pop();
+      messenger.showSnackBar(const SnackBar(content: Text('Report deleted.')));
+    } else {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
+  void _openEdit(Incident incident) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => NewReportScreen(incident: incident)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = context.read<AuthProvider>().appUser?.uid;
+
+    return StreamBuilder<Incident?>(
+      stream: _stream,
+      builder: (context, snapshot) {
+        final incident = snapshot.data;
+        final canModify =
+            incident != null &&
+            incident.reporterId == uid &&
+            incident.isEditable;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Incident Details'),
+            actions: [
+              if (canModify)
+                PopupMenuButton<String>(
+                  onSelected: (value) => value == 'edit'
+                      ? _openEdit(incident)
+                      : _confirmDelete(incident),
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: ListTile(
+                        leading: Icon(Icons.edit_outlined),
+                        title: Text('Edit report'),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.delete_outline,
+                          color: AppColors.danger,
+                        ),
+                        title: Text(
+                          'Delete report',
+                          style: TextStyle(color: AppColors.danger),
+                        ),
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          body: _buildBody(snapshot),
+        );
+      },
+    );
+  }
+
+  Widget _buildBody(AsyncSnapshot<Incident?> snapshot) {
+    if (snapshot.hasError) {
+      return const Center(
+        child: EmptyState(
+          icon: Icons.cloud_off_rounded,
+          title: 'Could not load this report',
+          message: 'Check your connection and try again.',
+        ),
+      );
+    }
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final incident = snapshot.data;
+    if (incident == null) {
+      return const Center(
+        child: EmptyState(
+          icon: Icons.delete_outline,
+          title: 'Report not found',
+          message: 'This report may have been deleted.',
+        ),
+      );
+    }
+    return _DetailsBody(incident: incident);
   }
 }
 
@@ -116,6 +205,10 @@ class _DetailsBody extends StatelessWidget {
           text: 'Submitted on ${Formatters.dateTime(incident.createdAt)}',
         ),
         _InfoRow(icon: Icons.person_outline, text: 'Reported by $reporter'),
+        if (isOwner && !incident.isEditable) ...[
+          const SizedBox(height: 10),
+          const _LockedNotice(),
+        ],
         const SizedBox(height: 16),
         _Section(
           title: 'Status Timeline',
@@ -247,6 +340,33 @@ class _ActivityTile extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LockedNotice extends StatelessWidget {
+  const _LockedNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.lock_outline, size: 18, color: AppColors.primary),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Staff have picked up this report, so it can no longer be edited or deleted.',
+              style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
             ),
           ),
         ],

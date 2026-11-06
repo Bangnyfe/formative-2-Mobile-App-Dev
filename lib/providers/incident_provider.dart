@@ -101,6 +101,18 @@ class IncidentProvider extends ChangeNotifier {
 
   Stream<Incident?> watchIncident(String id) => _service.watchIncident(id);
 
+  /// Returns an error message, or null when the report was deleted.
+  Future<String?> deleteIncident(String id) async {
+    try {
+      await _service.deleteIncident(id);
+      return null;
+    } on IncidentLockedException catch (e) {
+      return e.toString();
+    } catch (_) {
+      return 'Could not delete the report. Check your connection.';
+    }
+  }
+
   void setSearchQuery(String value) {
     _searchQuery = value.trim();
     notifyListeners();

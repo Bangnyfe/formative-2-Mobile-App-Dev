@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/constants.dart';
 import '../../core/theme.dart';
 import '../../core/validators.dart';
+import '../../models/incident.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/report_form_provider.dart';
 import '../../widgets/category_selector.dart';
@@ -11,20 +12,25 @@ import '../../widgets/error_banner.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/section_label.dart';
 
+/// Creates a new report, or edits [incident] when one is passed in.
 class NewReportScreen extends StatelessWidget {
-  const NewReportScreen({super.key});
+  const NewReportScreen({super.key, this.incident});
+
+  final Incident? incident;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => ReportFormProvider(),
-      child: const _NewReportView(),
+      create: (_) => ReportFormProvider(existing: incident),
+      child: _NewReportView(incident: incident),
     );
   }
 }
 
 class _NewReportView extends StatefulWidget {
-  const _NewReportView();
+  const _NewReportView({this.incident});
+
+  final Incident? incident;
 
   @override
   State<_NewReportView> createState() => _NewReportViewState();
@@ -35,6 +41,17 @@ class _NewReportViewState extends State<_NewReportView> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _locationController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final incident = widget.incident;
+    if (incident != null) {
+      _titleController.text = incident.title;
+      _descriptionController.text = incident.description;
+      _locationController.text = incident.location;
+    }
+  }
 
   @override
   void dispose() {
@@ -63,8 +80,12 @@ class _NewReportViewState extends State<_NewReportView> {
     if (success) {
       navigator.pop();
       messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Report submitted. You can track it in My Reports.'),
+        SnackBar(
+          content: Text(
+            form.isEditing
+                ? 'Report updated.'
+                : 'Report submitted. You can track it in My Reports.',
+          ),
         ),
       );
     }
@@ -75,7 +96,9 @@ class _NewReportViewState extends State<_NewReportView> {
     final form = context.watch<ReportFormProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report an Incident')),
+      appBar: AppBar(
+        title: Text(form.isEditing ? 'Edit Report' : 'Report an Incident'),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
@@ -130,8 +153,8 @@ class _NewReportViewState extends State<_NewReportView> {
                 const SizedBox(height: 16),
               ],
               PrimaryButton(
-                label: 'Submit Report',
-                icon: Icons.send_rounded,
+                label: form.isEditing ? 'Save Changes' : 'Submit Report',
+                icon: form.isEditing ? Icons.check_rounded : Icons.send_rounded,
                 isLoading: form.isSubmitting,
                 onPressed: _submit,
               ),
