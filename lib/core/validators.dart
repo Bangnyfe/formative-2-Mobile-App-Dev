@@ -50,6 +50,22 @@ class Validators {
     return null;
   }
 
+  static String? incidentTitle(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Please add a short title';
+    if (text.length < 5) return 'Title should be at least 5 characters';
+    return null;
+  }
+
+  static String? incidentDescription(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return 'Please describe the issue';
+    if (text.length < 15) {
+      return 'Add a bit more detail (at least 15 characters)';
+    }
+    return null;
+  }
+
   static String? required(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) return '$fieldName is required';
     return null;

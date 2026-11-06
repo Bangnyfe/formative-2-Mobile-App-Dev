@@ -36,6 +36,21 @@ void main() {
     });
   });
 
+  group('Incident validators', () {
+    test('title needs at least 5 characters', () {
+      expect(Validators.incidentTitle('Leak'), isNotNull);
+      expect(Validators.incidentTitle('Water leak'), isNull);
+    });
+
+    test('description needs at least 15 characters', () {
+      expect(Validators.incidentDescription('Broken tap'), isNotNull);
+      expect(
+        Validators.incidentDescription('The tap in room 204 is broken.'),
+        isNull,
+      );
+    });
+  });
+
   group('Validators.name', () {
     test('requires a non-empty name', () {
       expect(Validators.name('  '), isNotNull);

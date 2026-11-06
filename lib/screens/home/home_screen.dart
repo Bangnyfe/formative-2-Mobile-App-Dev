@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/primary_button.dart';
+import '../report/new_report_screen.dart';
 
 /// Temporary home screen used to confirm the auth flow works.
 /// It is replaced by the full dashboard in a later step.
@@ -42,6 +44,17 @@ class HomeScreen extends StatelessWidget {
             Chip(
               label: Text(user.isStaff ? 'Staff' : 'Student'),
               backgroundColor: AppColors.primaryLight,
+            ),
+            const SizedBox(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: PrimaryButton(
+                label: 'Report an Issue',
+                icon: Icons.add_rounded,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const NewReportScreen()),
+                ),
+              ),
             ),
           ],
         ),
