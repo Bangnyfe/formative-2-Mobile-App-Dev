@@ -4,18 +4,26 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  static const primary = Color(0xFF6C4CF1);
-  static const primaryLight = Color(0xFFEDE8FF);
-  static const background = Color(0xFFF7F7FB);
-  static const surface = Colors.white;
-  static const textPrimary = Color(0xFF1C1B29);
-  static const textSecondary = Color(0xFF6E6B80);
-  static const border = Color(0xFFE6E4EF);
+  // Sky blue brand colour with hot pink accents.
+  static const primary = Color(0xFF0593C6);
+  static const primaryDark = Color(0xFF04729A);
+  static const primaryLight = Color(0xFFE2F3FA);
+  static const accent = Color(0xFFD83995);
+  static const accentLight = Color(0xFFFBE6F1);
 
-  static const success = Color(0xFF2EAD6B);
-  static const warning = Color(0xFFF2A93B);
-  static const info = Color(0xFF3B82F6);
-  static const danger = Color(0xFFE5484D);
+  // Cool, slightly blue-tinted neutrals so the greys sit well with the brand.
+  static const background = Color(0xFFF4F8FB);
+  static const surface = Colors.white;
+  static const textPrimary = Color(0xFF0F2433);
+  static const textSecondary = Color(0xFF5E7282);
+  static const border = Color(0xFFDDE8EF);
+
+  // Status colours, chosen to stay distinct from the sky blue and hot pink:
+  // info is indigo rather than blue, and danger is a warm red, not pink.
+  static const success = Color(0xFF1F9D6B);
+  static const warning = Color(0xFFE59A1A);
+  static const info = Color(0xFF5B5FD6);
+  static const danger = Color(0xFFE0483A);
 }
 
 class AppTheme {
@@ -25,7 +33,10 @@ class AppTheme {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
+      secondary: AppColors.accent,
+      tertiary: AppColors.accent,
       surface: AppColors.surface,
+      error: AppColors.danger,
     );
 
     return ThemeData(
