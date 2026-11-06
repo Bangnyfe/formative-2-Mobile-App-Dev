@@ -29,6 +29,15 @@ class AppUser {
 
   bool get isStaff => role == UserRole.staff;
 
+  String get firstName => name.trim().split(' ').first;
+
+  String get initials {
+    final parts = name.trim().split(RegExp(r'\s+'));
+    if (parts.isEmpty || parts.first.isEmpty) return '?';
+    if (parts.length == 1) return parts.first[0].toUpperCase();
+    return (parts.first[0] + parts.last[0]).toUpperCase();
+  }
+
   factory AppUser.fromMap(String uid, Map<String, dynamic> data) {
     return AppUser(
       uid: uid,

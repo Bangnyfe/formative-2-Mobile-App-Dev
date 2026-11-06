@@ -16,4 +16,23 @@ class IncidentService {
     final doc = await _incidents.add(incident.toNewDocMap());
     return doc.id;
   }
+
+  // Sorted on the device instead of with orderBy(), which would need a
+  // composite index together with the where() filter.
+  Stream<List<Incident>> watchUserIncidents(String uid) {
+    return _incidents.where('reporterId', isEqualTo: uid).snapshots().map((
+      snapshot,
+    ) {
+      final list = snapshot.docs.map(Incident.fromDoc).toList();
+      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return list;
+    });
+  }
+
+  Stream<Incident?> watchIncident(String id) {
+    return _incidents
+        .doc(id)
+        .snapshots()
+        .map((doc) => doc.exists ? Incident.fromDoc(doc) : null);
+  }
 }

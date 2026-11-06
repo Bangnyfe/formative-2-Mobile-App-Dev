@@ -72,7 +72,7 @@ class ReportFormProvider extends ChangeNotifier {
       statusHistory: [
         StatusChange(
           status: IncidentStatus.submitted,
-          changedBy: reporter.name,
+          changedBy: _isAnonymous ? 'Anonymous' : reporter.name,
           at: now,
           note: 'Report submitted',
         ),

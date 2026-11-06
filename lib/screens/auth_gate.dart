@@ -6,7 +6,7 @@ import '../widgets/auth_header.dart';
 import '../widgets/primary_button.dart';
 import 'auth/login_screen.dart';
 import 'auth/verify_email_screen.dart';
-import 'home/home_screen.dart';
+import 'main_shell.dart';
 
 /// Chooses the first screen based on the current auth state.
 /// Because it rebuilds whenever [AuthProvider] notifies, signing in,
@@ -30,7 +30,7 @@ class AuthGate extends StatelessWidget {
         // any role-specific UI.
         if (auth.profileError != null) return const _ProfileErrorScreen();
         if (auth.appUser == null) return const _LoadingScreen();
-        return const HomeScreen();
+        return const MainShell();
     }
   }
 }

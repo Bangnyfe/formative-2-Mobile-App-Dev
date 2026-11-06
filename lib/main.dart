@@ -6,6 +6,7 @@ import 'core/constants.dart';
 import 'core/theme.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
+import 'providers/incident_provider.dart';
 import 'screens/auth_gate.dart';
 
 Future<void> main() async {
@@ -20,7 +21,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => AuthProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        // Re-subscribes to the right user's reports whenever the user changes.
+        ChangeNotifierProxyProvider<AuthProvider, IncidentProvider>(
+          create: (_) => IncidentProvider(),
+          update: (_, auth, incidents) => incidents!..updateUser(auth.appUser),
+        ),
+      ],
       child: MaterialApp(
         title: AppConstants.appName,
         debugShowCheckedModeBanner: false,
