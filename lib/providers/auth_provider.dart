@@ -33,8 +33,10 @@ class AuthProvider extends ChangeNotifier {
   AppUser? _appUser;
   bool _isBusy = false;
   String? _errorMessage;
+  String? _profileError;
 
   AuthStatus get status => _status;
+  String? get profileError => _profileError;
   AppUser? get appUser => _appUser;
   String? get email => _firebaseUser?.email;
   bool get isStaff => _appUser?.isStaff ?? false;
@@ -60,19 +62,47 @@ class AuthProvider extends ChangeNotifier {
   Future<void> _loadProfile(User user) async {
     if (_profileUid == user.uid) return;
     _profileUid = user.uid;
+    _profileError = null;
     try {
       await _userService.createProfileIfMissing(
         uid: user.uid,
         name: user.displayName ?? user.email!.split('@').first,
         email: user.email!,
       );
-    } catch (e) {
-      _errorMessage = 'Could not load your profile. Check your connection.';
+    } catch (_) {
+      _setProfileError();
+      return;
     }
-    _profileSub = _userService.watchUser(user.uid).listen((profile) {
-      _appUser = profile;
-      notifyListeners();
-    });
+    _profileSub = _userService
+        .watchUser(user.uid)
+        .listen(
+          (profile) {
+            _appUser = profile;
+            _profileError = null;
+            notifyListeners();
+          },
+          onError: (_) {
+            _setProfileError();
+            notifyListeners();
+          },
+        );
+  }
+
+  void _setProfileError() {
+    _profileError =
+        'We could not load your profile. Check your connection and try again.';
+    _profileSub?.cancel();
+    _profileSub = null;
+    _profileUid = null;
+  }
+
+  Future<void> retryProfile() async {
+    final user = _firebaseUser;
+    if (user == null) return;
+    _profileError = null;
+    notifyListeners();
+    await _loadProfile(user);
+    notifyListeners();
   }
 
   void _clearProfile() {
@@ -80,6 +110,7 @@ class AuthProvider extends ChangeNotifier {
     _profileSub = null;
     _profileUid = null;
     _appUser = null;
+    _profileError = null;
   }
 
   /// Runs an auth action with shared busy/error handling.
