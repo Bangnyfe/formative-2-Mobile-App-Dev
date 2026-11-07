@@ -58,49 +58,51 @@ class _MainShellState extends State<MainShell> {
         shape: const CircularNotchedRectangle(),
         notchMargin: 8,
         padding: EdgeInsets.zero,
+        // Each side takes half the bar, with a gap in the middle for the
+        // + button, so the tabs stay balanced for both students and staff.
         child: Row(
           children: [
-            _NavItem(
-              icon: Icons.home_outlined,
-              activeIcon: Icons.home_rounded,
-              label: 'Home',
-              selected: index == 0,
-              onTap: () => _goTo(0),
-            ),
-            _NavItem(
-              icon: Icons.description_outlined,
-              activeIcon: Icons.description,
-              label: 'Reports',
-              selected: index == 1,
-              onTap: () => _goTo(1),
-            ),
-            const Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(top: 34),
-                child: Text(
-                  'Report',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
+            Expanded(
+              child: Row(
+                children: [
+                  _NavItem(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home_rounded,
+                    label: 'Home',
+                    selected: index == 0,
+                    onTap: () => _goTo(0),
                   ),
-                ),
+                  _NavItem(
+                    icon: Icons.description_outlined,
+                    activeIcon: Icons.description,
+                    label: 'Reports',
+                    selected: index == 1,
+                    onTap: () => _goTo(1),
+                  ),
+                ],
               ),
             ),
-            if (isStaff)
-              _NavItem(
-                icon: Icons.admin_panel_settings_outlined,
-                activeIcon: Icons.admin_panel_settings,
-                label: 'Manage',
-                selected: index == 3,
-                onTap: () => _goTo(3),
+            const SizedBox(width: 72),
+            Expanded(
+              child: Row(
+                children: [
+                  if (isStaff)
+                    _NavItem(
+                      icon: Icons.admin_panel_settings_outlined,
+                      activeIcon: Icons.admin_panel_settings,
+                      label: 'Manage',
+                      selected: index == 3,
+                      onTap: () => _goTo(3),
+                    ),
+                  _NavItem(
+                    icon: Icons.person_outline,
+                    activeIcon: Icons.person,
+                    label: 'Profile',
+                    selected: index == 2,
+                    onTap: () => _goTo(2),
+                  ),
+                ],
               ),
-            _NavItem(
-              icon: Icons.person_outline,
-              activeIcon: Icons.person,
-              label: 'Profile',
-              selected: index == 2,
-              onTap: () => _goTo(2),
             ),
           ],
         ),
