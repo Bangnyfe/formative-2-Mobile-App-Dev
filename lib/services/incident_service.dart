@@ -31,6 +31,33 @@ class IncidentService {
     });
   }
 
+  Stream<List<Incident>> watchAllIncidents() {
+    return _incidents
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map(Incident.fromDoc).toList());
+  }
+
+  /// Staff only. arrayUnion appends to the timeline without rewriting it.
+  Future<void> updateStatus({
+    required String id,
+    required IncidentStatus status,
+    required String changedBy,
+    String? note,
+  }) {
+    final change = StatusChange(
+      status: status,
+      changedBy: changedBy,
+      at: DateTime.now(),
+      note: note,
+    );
+    return _incidents.doc(id).update({
+      'status': status.name,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'statusHistory': FieldValue.arrayUnion([change.toMap()]),
+    });
+  }
+
   Stream<Incident?> watchIncident(String id) {
     return _incidents
         .doc(id)

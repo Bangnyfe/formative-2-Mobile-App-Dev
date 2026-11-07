@@ -4,13 +4,12 @@ import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
 import '../models/incident.dart';
-import '../models/incident_category.dart';
 import '../models/incident_status.dart';
 import '../services/incident_service.dart';
+import 'incident_filters.dart';
 
-/// Keeps the signed-in user's reports in sync with Firestore and applies
-/// search and filters for the reports list.
-class IncidentProvider extends ChangeNotifier {
+/// Keeps the signed-in user's own reports in sync with Firestore.
+class IncidentProvider extends ChangeNotifier with IncidentFilters {
   IncidentProvider({IncidentService? service})
     : _service = service ?? IncidentService();
 
@@ -23,23 +22,13 @@ class IncidentProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  String _searchQuery = '';
-  IncidentStatus? _statusFilter;
-  IncidentCategory? _categoryFilter;
-
   List<Incident> get myIncidents => _myIncidents;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  String get searchQuery => _searchQuery;
-  IncidentStatus? get statusFilter => _statusFilter;
-  IncidentCategory? get categoryFilter => _categoryFilter;
-
-  bool get hasActiveFilters =>
-      _searchQuery.isNotEmpty ||
-      _statusFilter != null ||
-      _categoryFilter != null;
 
   List<Incident> get recentIncidents => _myIncidents.take(3).toList();
+
+  List<Incident> get filteredIncidents => applyFilters(_myIncidents);
 
   int countByStatus(IncidentStatus status) =>
       _myIncidents.where((i) => i.status == status).length;
@@ -47,22 +36,6 @@ class IncidentProvider extends ChangeNotifier {
   int get activeCount =>
       countByStatus(IncidentStatus.inReview) +
       countByStatus(IncidentStatus.inProgress);
-
-  List<Incident> get filteredIncidents {
-    final query = _searchQuery.toLowerCase();
-    return _myIncidents.where((incident) {
-      if (_statusFilter != null && incident.status != _statusFilter) {
-        return false;
-      }
-      if (_categoryFilter != null && incident.category != _categoryFilter) {
-        return false;
-      }
-      if (query.isEmpty) return true;
-      return incident.title.toLowerCase().contains(query) ||
-          incident.location.toLowerCase().contains(query) ||
-          incident.description.toLowerCase().contains(query);
-    }).toList();
-  }
 
   /// Called by the ProxyProvider whenever AuthProvider changes. It runs during
   /// a build, so it must not call notifyListeners() directly.
@@ -72,9 +45,7 @@ class IncidentProvider extends ChangeNotifier {
     _sub?.cancel();
     _myIncidents = [];
     _errorMessage = null;
-    _searchQuery = '';
-    _statusFilter = null;
-    _categoryFilter = null;
+    resetFilters();
 
     if (_uid == null) {
       _isLoading = false;
@@ -111,28 +82,6 @@ class IncidentProvider extends ChangeNotifier {
     } catch (_) {
       return 'Could not delete the report. Check your connection.';
     }
-  }
-
-  void setSearchQuery(String value) {
-    _searchQuery = value.trim();
-    notifyListeners();
-  }
-
-  void setStatusFilter(IncidentStatus? status) {
-    _statusFilter = status;
-    notifyListeners();
-  }
-
-  void setCategoryFilter(IncidentCategory? category) {
-    _categoryFilter = category;
-    notifyListeners();
-  }
-
-  void clearFilters() {
-    _searchQuery = '';
-    _statusFilter = null;
-    _categoryFilter = null;
-    notifyListeners();
   }
 
   @override

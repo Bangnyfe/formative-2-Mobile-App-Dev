@@ -7,6 +7,7 @@ import 'core/theme.dart';
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
 import 'providers/incident_provider.dart';
+import 'providers/staff_provider.dart';
 import 'screens/auth_gate.dart';
 
 Future<void> main() async {
@@ -27,6 +28,10 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<AuthProvider, IncidentProvider>(
           create: (_) => IncidentProvider(),
           update: (_, auth, incidents) => incidents!..updateUser(auth.appUser),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, StaffProvider>(
+          create: (_) => StaffProvider(),
+          update: (_, auth, staff) => staff!..updateUser(auth.appUser),
         ),
       ],
       child: MaterialApp(

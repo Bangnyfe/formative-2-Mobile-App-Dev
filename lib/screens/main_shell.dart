@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
+
 import '../core/theme.dart';
+import '../providers/auth_provider.dart';
 import 'home/home_screen.dart';
 import 'profile/profile_screen.dart';
 import 'report/new_report_screen.dart';
 import 'reports/my_reports_screen.dart';
+import 'staff/staff_dashboard_screen.dart';
 
-/// Bottom navigation with the Report button in the middle.
+/// Bottom navigation with the Report button in the middle. Staff get an
+/// extra Manage tab.
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -26,14 +31,19 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    final isStaff = context.watch<AuthProvider>().isStaff;
+    // If staff access is removed while on the Manage tab, fall back to Home.
+    final index = (!isStaff && _index == 3) ? 0 : _index;
+
     final pages = [
       HomeScreen(onReportTap: _openReportForm, onSeeAllTap: () => _goTo(1)),
       MyReportsScreen(onReportTap: _openReportForm),
       const ProfileScreen(),
+      if (isStaff) const StaffDashboardScreen(),
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: pages),
+      body: IndexedStack(index: index, children: pages),
       floatingActionButton: FloatingActionButton(
         onPressed: _openReportForm,
         backgroundColor: AppColors.accent,
@@ -54,14 +64,14 @@ class _MainShellState extends State<MainShell> {
               icon: Icons.home_outlined,
               activeIcon: Icons.home_rounded,
               label: 'Home',
-              selected: _index == 0,
+              selected: index == 0,
               onTap: () => _goTo(0),
             ),
             _NavItem(
               icon: Icons.description_outlined,
               activeIcon: Icons.description,
               label: 'Reports',
-              selected: _index == 1,
+              selected: index == 1,
               onTap: () => _goTo(1),
             ),
             const Expanded(
@@ -77,11 +87,19 @@ class _MainShellState extends State<MainShell> {
                 ),
               ),
             ),
+            if (isStaff)
+              _NavItem(
+                icon: Icons.admin_panel_settings_outlined,
+                activeIcon: Icons.admin_panel_settings,
+                label: 'Manage',
+                selected: index == 3,
+                onTap: () => _goTo(3),
+              ),
             _NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
               label: 'Profile',
-              selected: _index == 2,
+              selected: index == 2,
               onTap: () => _goTo(2),
             ),
           ],

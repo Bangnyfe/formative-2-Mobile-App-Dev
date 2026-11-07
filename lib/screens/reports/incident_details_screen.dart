@@ -10,7 +10,9 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/incident_thumbnail.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/status_timeline.dart';
+import '../../widgets/primary_button.dart';
 import '../report/new_report_screen.dart';
+import '../staff/update_status_sheet.dart';
 
 class IncidentDetailsScreen extends StatefulWidget {
   const IncidentDetailsScreen({super.key, required this.incidentId});
@@ -75,7 +77,9 @@ class _IncidentDetailsScreenState extends State<IncidentDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = context.read<AuthProvider>().appUser?.uid;
+    final user = context.watch<AuthProvider>().appUser;
+    final uid = user?.uid;
+    final isStaff = user?.isStaff ?? false;
 
     return StreamBuilder<Incident?>(
       stream: _stream,
@@ -123,6 +127,18 @@ class _IncidentDetailsScreenState extends State<IncidentDetailsScreen> {
             ],
           ),
           body: _buildBody(snapshot),
+          bottomNavigationBar: (isStaff && incident != null)
+              ? SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                    child: PrimaryButton(
+                      label: 'Update Status',
+                      icon: Icons.sync_alt_rounded,
+                      onPressed: () => showUpdateStatusSheet(context, incident),
+                    ),
+                  ),
+                )
+              : null,
         );
       },
     );
@@ -162,11 +178,21 @@ class _DetailsBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = context.read<AuthProvider>().appUser?.uid;
-    final isOwner = incident.reporterId == uid;
-    final reporter = isOwner
-        ? (incident.isAnonymous ? 'You (anonymous)' : 'You')
-        : incident.displayReporter;
+    final user = context.read<AuthProvider>().appUser;
+    final isOwner = incident.reporterId == user?.uid;
+    final isStaff = user?.isStaff ?? false;
+
+    // Staff always see the real name so they can follow up.
+    final String reporter;
+    if (isOwner) {
+      reporter = incident.isAnonymous ? 'You (anonymous)' : 'You';
+    } else if (isStaff) {
+      reporter = incident.isAnonymous
+          ? '${incident.reporterName} (anonymous to students)'
+          : incident.reporterName;
+    } else {
+      reporter = incident.displayReporter;
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
