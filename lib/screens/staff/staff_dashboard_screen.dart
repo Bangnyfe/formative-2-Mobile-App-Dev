@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/theme.dart';
 import '../../models/incident_status.dart';
+import '../../providers/incident_provider.dart';
 import '../../providers/staff_provider.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/incident_filter_bar.dart';
@@ -32,11 +33,33 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final staff = context.watch<StaffProvider>();
+    final incidents = context.watch<IncidentProvider>();
+    final all = incidents.allIncidents;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Campus Reports'),
+        title: const Text('Manage Reports'),
         automaticallyImplyLeading: false,
+        actions: [
+          PopupMenuButton<StaffSort>(
+            tooltip: 'Sort',
+            icon: const Icon(Icons.sort_rounded),
+            initialValue: staff.sort,
+            onSelected: staff.setSort,
+            itemBuilder: (_) => [
+              CheckedPopupMenuItem(
+                value: StaffSort.newest,
+                checked: staff.sort == StaffSort.newest,
+                child: const Text('Newest first'),
+              ),
+              CheckedPopupMenuItem(
+                value: StaffSort.mostAffected,
+                checked: staff.sort == StaffSort.mostAffected,
+                child: const Text('Most affected first'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -53,7 +76,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   Expanded(
                     child: _StatusCount(
                       status: status,
-                      count: staff.countByStatus(status),
+                      count: all.where((i) => i.status == status).length,
                       selected: staff.statusFilter == status,
                       onTap: () => staff.setStatusFilter(
                         staff.statusFilter == status ? null : status,
@@ -70,10 +93,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
           const SizedBox(height: 8),
           Expanded(
             child: IncidentList(
-              incidents: staff.filteredIncidents,
-              hasAnyIncidents: staff.allIncidents.isNotEmpty,
-              isLoading: staff.isLoading,
-              errorMessage: staff.errorMessage,
+              incidents: staff.visibleIncidents(all),
+              hasAnyIncidents: all.isNotEmpty,
+              isLoading: incidents.isLoading,
+              errorMessage: incidents.errorMessage,
               onClearFilters: _clearFilters,
               emptyState: const EmptyState(
                 icon: Icons.task_alt_rounded,

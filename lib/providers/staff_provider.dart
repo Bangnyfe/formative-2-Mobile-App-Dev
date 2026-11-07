@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 
 import '../models/app_user.dart';
@@ -8,60 +6,45 @@ import '../models/incident_status.dart';
 import '../services/incident_service.dart';
 import 'incident_filters.dart';
 
-/// All campus reports for staff, plus the status update action.
-/// Only listens to Firestore while the signed-in user is staff.
+enum StaffSort { newest, mostAffected }
+
+/// Staff-only tools: filters and sorting for the Manage tab, and the status
+/// update action. The reports themselves come from IncidentProvider.
 class StaffProvider extends ChangeNotifier with IncidentFilters {
   StaffProvider({IncidentService? service})
     : _service = service ?? IncidentService();
 
   final IncidentService _service;
 
-  StreamSubscription<List<Incident>>? _sub;
   AppUser? _staff;
+  StaffSort _sort = StaffSort.newest;
 
-  List<Incident> _allIncidents = [];
-  bool _isLoading = false;
-  String? _errorMessage;
-
-  List<Incident> get allIncidents => _allIncidents;
-  List<Incident> get filteredIncidents => applyFilters(_allIncidents);
-  bool get isLoading => _isLoading;
-  String? get errorMessage => _errorMessage;
-
-  int countByStatus(IncidentStatus status) =>
-      _allIncidents.where((i) => i.status == status).length;
+  StaffSort get sort => _sort;
 
   /// Runs during a build (from the ProxyProvider), so no notifyListeners().
   void updateUser(AppUser? user) {
     final staff = (user != null && user.isStaff) ? user : null;
-    final previousUid = _staff?.uid;
-    _staff = staff;
-    if (staff?.uid == previousUid) return;
-
-    _sub?.cancel();
-    _allIncidents = [];
-    _errorMessage = null;
-    resetFilters();
-
-    if (staff == null) {
-      _isLoading = false;
-      return;
+    if (staff?.uid != _staff?.uid) {
+      resetFilters();
+      _sort = StaffSort.newest;
     }
+    _staff = staff;
+  }
 
-    _isLoading = true;
-    _sub = _service.watchAllIncidents().listen(
-      (incidents) {
-        _allIncidents = incidents;
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
-      },
-      onError: (_) {
-        _isLoading = false;
-        _errorMessage = 'Could not load campus reports.';
-        notifyListeners();
-      },
-    );
+  void setSort(StaffSort sort) {
+    _sort = sort;
+    notifyListeners();
+  }
+
+  List<Incident> visibleIncidents(List<Incident> all) {
+    final list = applyFilters(all);
+    if (_sort == StaffSort.mostAffected) {
+      list.sort((a, b) {
+        final byCount = b.affectedCount.compareTo(a.affectedCount);
+        return byCount != 0 ? byCount : b.createdAt.compareTo(a.createdAt);
+      });
+    }
+    return list;
   }
 
   /// Returns an error message, or null on success.
@@ -85,11 +68,5 @@ class StaffProvider extends ChangeNotifier with IncidentFilters {
     } catch (_) {
       return 'Could not update the status. Check your connection.';
     }
-  }
-
-  @override
-  void dispose() {
-    _sub?.cancel();
-    super.dispose();
   }
 }

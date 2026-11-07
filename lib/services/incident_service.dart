@@ -19,18 +19,6 @@ class IncidentService {
     return doc.id;
   }
 
-  // Sorted on the device instead of with orderBy(), which would need a
-  // composite index together with the where() filter.
-  Stream<List<Incident>> watchUserIncidents(String uid) {
-    return _incidents.where('reporterId', isEqualTo: uid).snapshots().map((
-      snapshot,
-    ) {
-      final list = snapshot.docs.map(Incident.fromDoc).toList();
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    });
-  }
-
   Stream<List<Incident>> watchAllIncidents() {
     return _incidents
         .orderBy('createdAt', descending: true)
@@ -55,6 +43,20 @@ class IncidentService {
       'status': status.name,
       'updatedAt': FieldValue.serverTimestamp(),
       'statusHistory': FieldValue.arrayUnion([change.toMap()]),
+    });
+  }
+
+  /// Adds or removes the user from the "I noticed this too" list.
+  /// arrayUnion/arrayRemove avoid lost updates when people tap at once.
+  Future<void> setNoticed({
+    required String id,
+    required String uid,
+    required bool noticed,
+  }) {
+    return _incidents.doc(id).update({
+      'affectedUserIds': noticed
+          ? FieldValue.arrayUnion([uid])
+          : FieldValue.arrayRemove([uid]),
     });
   }
 

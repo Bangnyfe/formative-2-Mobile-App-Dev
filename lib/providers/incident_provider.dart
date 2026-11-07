@@ -8,7 +8,10 @@ import '../models/incident_status.dart';
 import '../services/incident_service.dart';
 import 'incident_filters.dart';
 
-/// Keeps the signed-in user's own reports in sync with Firestore.
+enum FeedScope { campus, mine }
+
+/// Keeps every campus report in sync with Firestore. "My reports" is the same
+/// list filtered to the signed-in user, so only one stream is needed.
 class IncidentProvider extends ChangeNotifier with IncidentFilters {
   IncidentProvider({IncidentService? service})
     : _service = service ?? IncidentService();
@@ -18,24 +21,38 @@ class IncidentProvider extends ChangeNotifier with IncidentFilters {
   StreamSubscription<List<Incident>>? _sub;
   String? _uid;
 
-  List<Incident> _myIncidents = [];
+  List<Incident> _allIncidents = [];
   bool _isLoading = false;
   String? _errorMessage;
+  FeedScope _scope = FeedScope.campus;
 
-  List<Incident> get myIncidents => _myIncidents;
+  List<Incident> get allIncidents => _allIncidents;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  FeedScope get scope => _scope;
 
-  List<Incident> get recentIncidents => _myIncidents.take(3).toList();
+  List<Incident> get myIncidents =>
+      _allIncidents.where((i) => i.reporterId == _uid).toList();
 
-  List<Incident> get filteredIncidents => applyFilters(_myIncidents);
+  List<Incident> get recentIncidents => myIncidents.take(3).toList();
+
+  List<Incident> get scopedIncidents =>
+      _scope == FeedScope.mine ? myIncidents : _allIncidents;
+
+  List<Incident> get filteredIncidents => applyFilters(scopedIncidents);
 
   int countByStatus(IncidentStatus status) =>
-      _myIncidents.where((i) => i.status == status).length;
+      myIncidents.where((i) => i.status == status).length;
 
   int get activeCount =>
       countByStatus(IncidentStatus.inReview) +
       countByStatus(IncidentStatus.inProgress);
+
+  void setScope(FeedScope scope) {
+    if (_scope == scope) return;
+    _scope = scope;
+    notifyListeners();
+  }
 
   /// Called by the ProxyProvider whenever AuthProvider changes. It runs during
   /// a build, so it must not call notifyListeners() directly.
@@ -43,8 +60,9 @@ class IncidentProvider extends ChangeNotifier with IncidentFilters {
     if (user?.uid == _uid) return;
     _uid = user?.uid;
     _sub?.cancel();
-    _myIncidents = [];
+    _allIncidents = [];
     _errorMessage = null;
+    _scope = FeedScope.campus;
     resetFilters();
 
     if (_uid == null) {
@@ -53,24 +71,41 @@ class IncidentProvider extends ChangeNotifier with IncidentFilters {
     }
 
     _isLoading = true;
-    _sub = _service
-        .watchUserIncidents(_uid!)
-        .listen(
-          (incidents) {
-            _myIncidents = incidents;
-            _isLoading = false;
-            _errorMessage = null;
-            notifyListeners();
-          },
-          onError: (_) {
-            _isLoading = false;
-            _errorMessage = 'Could not load your reports.';
-            notifyListeners();
-          },
-        );
+    _sub = _service.watchAllIncidents().listen(
+      (incidents) {
+        _allIncidents = incidents;
+        _isLoading = false;
+        _errorMessage = null;
+        notifyListeners();
+      },
+      onError: (_) {
+        _isLoading = false;
+        _errorMessage = 'Could not load reports.';
+        notifyListeners();
+      },
+    );
   }
 
   Stream<Incident?> watchIncident(String id) => _service.watchIncident(id);
+
+  /// Returns an error message, or null on success.
+  Future<String?> toggleNoticed(Incident incident) async {
+    final uid = _uid;
+    if (uid == null || incident.reporterId == uid) return null;
+    if (incident.status.isClosed) {
+      return 'This report is already closed.';
+    }
+    try {
+      await _service.setNoticed(
+        id: incident.id,
+        uid: uid,
+        noticed: !incident.isNoticedBy(uid),
+      );
+      return null;
+    } catch (_) {
+      return 'Could not update. Check your connection.';
+    }
+  }
 
   /// Returns an error message, or null when the report was deleted.
   Future<String?> deleteIncident(String id) async {

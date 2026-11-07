@@ -4,10 +4,11 @@ import 'package:provider/provider.dart';
 
 import '../core/theme.dart';
 import '../providers/auth_provider.dart';
+import '../providers/incident_provider.dart';
 import 'home/home_screen.dart';
 import 'profile/profile_screen.dart';
 import 'report/new_report_screen.dart';
-import 'reports/my_reports_screen.dart';
+import 'reports/reports_screen.dart';
 import 'staff/staff_dashboard_screen.dart';
 
 /// Bottom navigation with the Report button in the middle. Staff get an
@@ -29,6 +30,12 @@ class _MainShellState extends State<MainShell> {
 
   void _goTo(int index) => setState(() => _index = index);
 
+  // "See all" on Home is about the user's own reports.
+  void _openMyReports() {
+    context.read<IncidentProvider>().setScope(FeedScope.mine);
+    _goTo(1);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isStaff = context.watch<AuthProvider>().isStaff;
@@ -36,8 +43,8 @@ class _MainShellState extends State<MainShell> {
     final index = (!isStaff && _index == 3) ? 0 : _index;
 
     final pages = [
-      HomeScreen(onReportTap: _openReportForm, onSeeAllTap: () => _goTo(1)),
-      MyReportsScreen(onReportTap: _openReportForm),
+      HomeScreen(onReportTap: _openReportForm, onSeeAllTap: _openMyReports),
+      ReportsScreen(onReportTap: _openReportForm),
       const ProfileScreen(),
       if (isStaff) const StaffDashboardScreen(),
     ];

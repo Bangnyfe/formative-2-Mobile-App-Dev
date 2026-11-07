@@ -53,6 +53,7 @@ class Incident {
     required this.updatedAt,
     this.photoUrl,
     this.statusHistory = const [],
+    this.affectedUserIds = const [],
   });
 
   final String id;
@@ -69,8 +70,16 @@ class Incident {
   final String? photoUrl;
   final List<StatusChange> statusHistory;
 
+  /// Other users who tapped "I noticed this too".
+  final List<String> affectedUserIds;
+
   /// Students may only edit or delete a report before staff pick it up.
   bool get isEditable => status == IncidentStatus.submitted;
+
+  /// The reporter plus everyone who said they noticed it too.
+  int get affectedCount => 1 + affectedUserIds.length;
+
+  bool isNoticedBy(String uid) => affectedUserIds.contains(uid);
 
   /// Name shown to other users; hides the reporter when anonymous.
   String get displayReporter => isAnonymous ? 'Anonymous' : reporterName;
@@ -96,6 +105,9 @@ class Incident {
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       photoUrl: data['photoUrl'] as String?,
       statusHistory: history,
+      affectedUserIds: List<String>.from(
+        data['affectedUserIds'] as List<dynamic>? ?? [],
+      ),
     );
   }
 
@@ -112,6 +124,7 @@ class Incident {
       'isAnonymous': isAnonymous,
       'photoUrl': photoUrl,
       'statusHistory': statusHistory.map((s) => s.toMap()).toList(),
+      'affectedUserIds': <String>[],
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

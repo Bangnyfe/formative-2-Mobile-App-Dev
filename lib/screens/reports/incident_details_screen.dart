@@ -231,6 +231,12 @@ class _DetailsBody extends StatelessWidget {
           text: 'Submitted on ${Formatters.dateTime(incident.createdAt)}',
         ),
         _InfoRow(icon: Icons.person_outline, text: 'Reported by $reporter'),
+        const SizedBox(height: 12),
+        _AffectedCard(
+          incident: incident,
+          canVote: !isOwner && !isStaff,
+          hasVoted: user != null && incident.isNoticedBy(user.uid),
+        ),
         if (isOwner && !incident.isEditable) ...[
           const SizedBox(height: 10),
           const _LockedNotice(),
@@ -395,6 +401,107 @@ class _LockedNotice extends StatelessWidget {
               style: TextStyle(fontSize: 13, color: AppColors.textPrimary),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows how many people are affected, and lets other users add themselves.
+class _AffectedCard extends StatefulWidget {
+  const _AffectedCard({
+    required this.incident,
+    required this.canVote,
+    required this.hasVoted,
+  });
+
+  final Incident incident;
+  final bool canVote;
+  final bool hasVoted;
+
+  @override
+  State<_AffectedCard> createState() => _AffectedCardState();
+}
+
+class _AffectedCardState extends State<_AffectedCard> {
+  bool _busy = false;
+
+  Future<void> _toggle() async {
+    setState(() => _busy = true);
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<IncidentProvider>().toggleNoticed(
+      widget.incident,
+    );
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.incident.affectedCount;
+    final isClosed = widget.incident.status.isClosed;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.accentLight,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.people_alt_outlined, color: AppColors.accent),
+              const SizedBox(width: 10),
+              Text(
+                '$count ${count == 1 ? 'person' : 'people'} affected',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          if (widget.canVote) ...[
+            const SizedBox(height: 12),
+            if (isClosed)
+              const Text(
+                'This report is closed, so it no longer collects votes.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              )
+            else
+              widget.hasVoted
+                  ? OutlinedButton.icon(
+                      onPressed: _busy ? null : _toggle,
+                      icon: const Icon(Icons.check_rounded),
+                      label: const Text('You noticed this'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accent,
+                        side: const BorderSide(color: AppColors.accent),
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    )
+                  : ElevatedButton.icon(
+                      onPressed: _busy ? null : _toggle,
+                      icon: const Icon(Icons.front_hand_outlined),
+                      label: const Text('I noticed this too'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accent,
+                        minimumSize: const Size.fromHeight(46),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+          ],
         ],
       ),
     );

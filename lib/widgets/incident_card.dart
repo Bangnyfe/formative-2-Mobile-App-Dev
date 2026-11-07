@@ -65,6 +65,23 @@ class IncidentCard extends StatelessWidget {
                             color: AppColors.textSecondary,
                           ),
                         ),
+                        if (incident.affectedCount > 1) ...[
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.people_outline,
+                            size: 14,
+                            color: AppColors.accent,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${incident.affectedCount}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
