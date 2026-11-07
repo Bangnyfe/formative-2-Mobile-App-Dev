@@ -39,6 +39,7 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     final isStaff = context.watch<AuthProvider>().isStaff;
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
     // If staff access is removed while on the Manage tab, fall back to Home.
     final index = (!isStaff && _index == 3) ? 0 : _index;
 
@@ -51,14 +52,16 @@ class _MainShellState extends State<MainShell> {
 
     return Scaffold(
       body: IndexedStack(index: index, children: pages),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openReportForm,
-        backgroundColor: AppColors.accent,
-        foregroundColor: Colors.white,
-        shape: const CircleBorder(),
-        tooltip: 'Report an issue',
-        child: const Icon(Icons.add_rounded, size: 30),
-      ),
+      floatingActionButton: keyboardOpen
+          ? null
+          : FloatingActionButton(
+              onPressed: _openReportForm,
+              backgroundColor: AppColors.accent,
+              foregroundColor: Colors.white,
+              shape: const CircleBorder(),
+              tooltip: 'Report an issue',
+              child: const Icon(Icons.add_rounded, size: 30),
+            ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         color: AppColors.surface,

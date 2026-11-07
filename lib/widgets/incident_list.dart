@@ -30,8 +30,8 @@ class IncidentList extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
     if (errorMessage != null) {
-      return Center(
-        child: EmptyState(
+      return _centered(
+        EmptyState(
           icon: Icons.cloud_off_rounded,
           title: 'Something went wrong',
           message: errorMessage!,
@@ -39,11 +39,11 @@ class IncidentList extends StatelessWidget {
       );
     }
     if (!hasAnyIncidents) {
-      return Center(child: emptyState);
+      return _centered(emptyState);
     }
     if (incidents.isEmpty) {
-      return Center(
-        child: EmptyState(
+      return _centered(
+        EmptyState(
           icon: Icons.search_off_rounded,
           title: 'No matching reports',
           message: 'Try a different search or filter.',
@@ -68,5 +68,10 @@ class IncidentList extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Scrollable so the message never overflows when the keyboard is open.
+  Widget _centered(Widget child) {
+    return Center(child: SingleChildScrollView(child: child));
   }
 }

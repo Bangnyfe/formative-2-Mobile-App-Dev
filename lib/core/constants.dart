@@ -2,7 +2,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const appName = 'Campus Fix';
+  static const appName = 'Campus Incident Reporter';
 
   /// Only ALU accounts may register or sign in.
   static const allowedEmailDomains = ['alustudent.com', 'alueducation.com'];

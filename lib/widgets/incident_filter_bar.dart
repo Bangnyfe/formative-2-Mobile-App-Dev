@@ -58,6 +58,24 @@ class IncidentFilterBar extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
+              if (filters.categoryFilter != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InputChip(
+                    avatar: Icon(
+                      filters.categoryFilter!.icon,
+                      size: 18,
+                      color: AppColors.primary,
+                    ),
+                    label: Text(filters.categoryFilter!.label),
+                    onDeleted: () => filters.setCategoryFilter(null),
+                    backgroundColor: AppColors.primaryLight,
+                    side: BorderSide.none,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
               _FilterChip(
                 label: 'All',
                 selected: filters.statusFilter == null,
@@ -120,18 +138,27 @@ class _CategoryFilterButton extends StatelessWidget {
   final IncidentCategory? selected;
   final ValueChanged<IncidentCategory?> onSelected;
 
+  static const _all = 'all';
+
   @override
   Widget build(BuildContext context) {
     final isActive = selected != null;
 
-    return PopupMenuButton<IncidentCategory?>(
+    // PopupMenuButton ignores a null selection, so "All" uses its own value.
+    return PopupMenuButton<String>(
       tooltip: 'Filter by category',
-      onSelected: onSelected,
+      onSelected: (value) =>
+          onSelected(value == _all ? null : IncidentCategory.fromName(value)),
       itemBuilder: (_) => [
-        const PopupMenuItem(value: null, child: Text('All categories')),
+        CheckedPopupMenuItem(
+          value: _all,
+          checked: selected == null,
+          child: const Text('All categories'),
+        ),
         for (final category in IncidentCategory.values)
-          PopupMenuItem(
-            value: category,
+          CheckedPopupMenuItem(
+            value: category.name,
+            checked: selected == category,
             child: Row(
               children: [
                 Icon(category.icon, size: 20, color: AppColors.primary),
@@ -152,7 +179,7 @@ class _CategoryFilterButton extends StatelessWidget {
           ),
         ),
         child: Icon(
-          isActive ? selected!.icon : Icons.tune_rounded,
+          Icons.tune_rounded,
           color: isActive ? AppColors.accent : AppColors.textSecondary,
         ),
       ),

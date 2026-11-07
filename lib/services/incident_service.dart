@@ -6,10 +6,11 @@ import '../models/incident_category.dart';
 import '../models/incident_status.dart';
 
 class IncidentService {
-  IncidentService({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  IncidentService({FirebaseFirestore? firestore}) : _injected = firestore;
 
-  final FirebaseFirestore _firestore;
+  // Resolved lazily so the service can be constructed in unit tests.
+  final FirebaseFirestore? _injected;
+  FirebaseFirestore get _firestore => _injected ?? FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _incidents =>
       _firestore.collection(AppConstants.incidentsCollection);
