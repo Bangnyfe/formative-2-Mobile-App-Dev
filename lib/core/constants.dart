@@ -11,6 +11,12 @@ class AppConstants {
   static const usersCollection = 'users';
   static const incidentsCollection = 'incidents';
 
+  // Cloudinary is used for photos instead of Firebase Storage (needs Blaze).
+  // The unsigned preset only accepts jpg/png/webp into incident_photos.
+  static const cloudinaryCloudName = 'w4skobz9';
+  static const cloudinaryUploadPreset = 'incident_photos';
+  static const maxPhotoBytes = 5 * 1024 * 1024;
+
   static const titleMaxLength = 60;
   static const descriptionMaxLength = 500;
 

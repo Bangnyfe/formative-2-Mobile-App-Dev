@@ -74,6 +74,7 @@ class IncidentService {
     required IncidentCategory category,
     required String location,
     required bool isAnonymous,
+    required String? photoUrl,
   }) {
     final ref = _incidents.doc(id);
     return _firestore.runTransaction((tx) async {
@@ -85,6 +86,7 @@ class IncidentService {
         'category': category.name,
         'location': location,
         'isAnonymous': isAnonymous,
+        'photoUrl': photoUrl,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });

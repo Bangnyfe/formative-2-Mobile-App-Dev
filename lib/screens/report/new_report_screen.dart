@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/report_form_provider.dart';
 import '../../widgets/category_selector.dart';
 import '../../widgets/error_banner.dart';
+import '../../widgets/photo_picker_field.dart';
 import '../../widgets/primary_button.dart';
 import '../../widgets/section_label.dart';
 
@@ -59,6 +62,14 @@ class _NewReportViewState extends State<_NewReportView> {
     _descriptionController.dispose();
     _locationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _onPhotoPicked(File file) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<ReportFormProvider>().setPhoto(file);
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+    }
   }
 
   Future<void> _submit() async {
@@ -142,6 +153,14 @@ class _NewReportViewState extends State<_NewReportView> {
               const SizedBox(height: 8),
               const SectionLabel('Location'),
               _LocationField(controller: _locationController),
+              const SizedBox(height: 16),
+              const SectionLabel('Add a photo', optional: true),
+              PhotoPickerField(
+                file: form.newPhoto,
+                networkUrl: form.existingPhotoUrl,
+                onPicked: _onPhotoPicked,
+                onRemove: form.removePhoto,
+              ),
               const SizedBox(height: 16),
               _AnonymousToggle(
                 value: form.isAnonymous,
