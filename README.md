@@ -4,7 +4,7 @@ A Flutter app for reporting campus issues at ALU, like broken projectors, dead s
 
 Students submit reports and can see what others have reported. If someone has already reported the same problem, they tap "I noticed this too" instead of filing a duplicate. Campus staff see every report, can sort by how many people are affected, and update the status as work progresses.
 
-Demo video: _link to be added_
+Demo video: https://youtu.be/oqXp9AMMfYU
 
 ## Features
 
