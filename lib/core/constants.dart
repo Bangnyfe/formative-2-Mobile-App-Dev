@@ -20,15 +20,15 @@ class AppConstants {
   static const titleMaxLength = 60;
   static const descriptionMaxLength = 500;
 
+  // Classrooms are named after African countries, e.g. "Social Commons, Egypt".
   static const campusLocations = [
-    'Main Building',
+    'Social Commons',
+    'Learning Commons',
+    'Enterprise Commons',
     'Library',
     'Cafeteria',
     'Student Residence',
-    'Block A',
-    'Block B',
     'Innovation Lab',
-    'Sports Ground',
     'Parking Area',
     'Main Gate',
   ];

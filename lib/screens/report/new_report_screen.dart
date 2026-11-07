@@ -222,7 +222,7 @@ class _LocationFieldState extends State<_LocationField> {
           focusNode: focusNode,
           textCapitalization: TextCapitalization.words,
           decoration: const InputDecoration(
-            hintText: 'e.g. Block B, Room 204',
+            hintText: 'e.g. Social Commons, Egypt',
             prefixIcon: Icon(Icons.location_on_outlined),
           ),
           validator: (value) => Validators.required(value, 'Location'),

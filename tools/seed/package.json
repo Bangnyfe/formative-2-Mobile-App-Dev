@@ -1,0 +1,12 @@
+{
+  "name": "campus-fix-seed",
+  "private": true,
+  "description": "Loads demo users and incident reports into Firebase for the app demo.",
+  "scripts": {
+    "seed": "node seed_demo_data.js",
+    "clean": "node seed_demo_data.js --clean"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
