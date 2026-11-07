@@ -1,0 +1,127 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Only verified ALU accounts can use the app at all.
+    function verifiedAlu() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower()
+             .matches('.*@(alustudent|alueducation)[.]com$');
+    }
+
+    function profile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isStaff() {
+      return verifiedAlu() && profile().role == 'staff';
+    }
+
+    function changedOnly(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function validDetails(data) {
+      return data.title is string
+        && data.title.size() >= 5 && data.title.size() <= 60
+        && data.description is string
+        && data.description.size() >= 15 && data.description.size() <= 500
+        && data.location is string
+        && data.location.size() >= 1 && data.location.size() <= 100
+        && data.category in ['facilities', 'water', 'electricity', 'safety',
+                             'sanitation', 'furniture', 'other']
+        && data.isAnonymous is bool
+        && (data.photoUrl == null
+            || (data.photoUrl is string
+                && data.photoUrl.matches('https://res[.]cloudinary[.]com/w4skobz9/.*')));
+    }
+
+    // ---------- Users ----------
+
+    match /users/{uid} {
+      allow read: if verifiedAlu() && request.auth.uid == uid;
+
+      // New profiles are always students; staff are promoted in the Console.
+      allow create: if verifiedAlu()
+        && request.auth.uid == uid
+        && request.resource.data.keys()
+             .hasOnly(['name', 'email', 'role', 'department', 'createdAt'])
+        && request.resource.data.role == 'student'
+        && request.resource.data.email == request.auth.token.email;
+
+      // Nobody can change their own role or email from the app.
+      allow update: if verifiedAlu()
+        && request.auth.uid == uid
+        && !request.resource.data.diff(resource.data).affectedKeys()
+              .hasAny(['role', 'email']);
+
+      allow delete: if false;
+    }
+
+    // ---------- Incidents ----------
+
+    match /incidents/{incidentId} {
+      allow read: if verifiedAlu();
+
+      allow create: if verifiedAlu()
+        && request.resource.data.keys().hasOnly([
+             'title', 'description', 'category', 'location', 'status',
+             'reporterId', 'reporterName', 'isAnonymous', 'photoUrl',
+             'statusHistory', 'affectedUserIds', 'createdAt', 'updatedAt'])
+        && request.resource.data.reporterId == request.auth.uid
+        && request.resource.data.reporterName == profile().name
+        && request.resource.data.status == 'submitted'
+        && request.resource.data.statusHistory.size() == 1
+        && request.resource.data.statusHistory[0].status == 'submitted'
+        && request.resource.data.affectedUserIds.size() == 0
+        && request.resource.data.createdAt == request.time
+        && validDetails(request.resource.data);
+
+      allow update: if ownerEdit() || staffStatusUpdate() || noticeToggle();
+
+      allow delete: if verifiedAlu()
+        && resource.data.reporterId == request.auth.uid
+        && resource.data.status == 'submitted';
+
+      // The reporter can edit details only while the report is still submitted.
+      function ownerEdit() {
+        return verifiedAlu()
+          && resource.data.reporterId == request.auth.uid
+          && resource.data.status == 'submitted'
+          && changedOnly(['title', 'description', 'category', 'location',
+                          'isAnonymous', 'photoUrl', 'updatedAt'])
+          && validDetails(request.resource.data);
+      }
+
+      // Staff change the status and add exactly one timeline entry.
+      function staffStatusUpdate() {
+        return isStaff()
+          && changedOnly(['status', 'statusHistory', 'updatedAt'])
+          && request.resource.data.status in ['inReview', 'inProgress',
+                                              'resolved', 'rejected']
+          && request.resource.data.statusHistory.size()
+               == resource.data.statusHistory.size() + 1;
+      }
+
+      // Other users can add or remove only their own ID, on open reports.
+      function noticeToggle() {
+        let before = resource.data.get('affectedUserIds', []).toSet();
+        let after = request.resource.data.get('affectedUserIds', []).toSet();
+        return verifiedAlu()
+          && resource.data.reporterId != request.auth.uid
+          && !(resource.data.status in ['resolved', 'rejected'])
+          && changedOnly(['affectedUserIds'])
+          && after.difference(before).union(before.difference(after))
+               == [request.auth.uid].toSet();
+      }
+    }
+  }
+}
